@@ -1,0 +1,192 @@
+---
+title: "Data Wrangling: Wrapping Your Head around Real-World Statistics"
+author: "Violet Fletcher"
+date: "March 21st, 2024"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+<p style="font-size: 20pt">
+Welcome!
+</p>
+<p style="font-family: times, serif; font-size:12pt">
+  Data wrangling is the process of selecting, transforming, and manipulating data frames in order to make them usable in data analysis. Many times, data frames have too much information, which makes it difficult to reach conclusions based on the raw data. 
+  In this tutorial,  you will learn how to use pipeline operators, how to implement basic data wrangling functions, and how to write your own functions in order to streamline the data wrangling process. 
+  This tutorial uses the the raw data behind the story "The Dollar-And-Cents Case Against Hollywood’s Exclusion of Women" a news article by Walt Hickey that was published on Five Thirty Eight (Source: https://fivethirtyeight.com/features/the-dollar-and-cents-case-against-hollywoods-exclusion-of-women/). This data highlights discrepancies in female representation in Hollywood by applying the Bechdel test to films released from 1970-2013. In order to pass the Bechdel test, a film has to meet the following three criteria: (1) it has to have at least two women in it, (2) two women talk to each other, and (3) two women talk to each other about something besides a man (Source: https://bechdeltest.com). By examining these data we can start to see trends regarding representation of women in major blockbuster films. 
+</p>
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(fivethirtyeight)
+library(learnr)
+```
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+view(bechdel)
+```
+
+<p style="font-size: 20pt">
+Pipeline Operators
+</p>
+<p style="font-family: times, serif; font-size:12pt">
+  A useful tool for wrangling data is pipeline operators. Pipeline operators look like this: %>%. They let coders perform a string of operations on a data frame while simultaneously simplifying their code. To insert a pipeline operator, press command + shift + m. 
+  Here's an example of how a pipline operator could be used to streamline a chunk of code: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_pass =
+  bechdel %>% #put the data first 
+  filter(binary=="PASS") %>% #filters the rows to only show movies that passed
+  arrange(year) #arranged rows from earliest year to latest year
+bechdel_pass
+```
+<p style="font-family: times, serif; font-size:12pt"> 
+  Let's practice! Filter the data so it only displays movies that failed the Bechdel test, and arrange the rows based on budget. 
+</p>
+```{r message=FALSE, warning=FALSE, include=FALSE}
+bechdel_fail =
+  bechdel %>% 
+  filter(binary=="FAIL") %>%
+  arrange(budget)
+bechdel_fail
+```
+
+```{r practice1,exercise=TRUE, exercise.eval=FALSE}
+#Type your code here! 
+```
+
+<p style="font-size: 20pt">
+Data Wrangling Functions
+</p>
+<p style="font-family: times, serif; font-size:12pt">
+  We've already practiced using the filter() and arrange() functions, now let's go over some more! The select() function takes allows us to separate the columns we are most interested in. Here's what we would code if we only wanted to select the "year" and "title" columns: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+year_title = 
+  bechdel %>% 
+  select(year, title)
+year_title
+```
+<p style="font-family: times, serif; font-size:12pt">
+  If we want to keep examining this set of data, we're going to need a little more information then just the years and titles. Let's practice using select() on our data set to pull out the "year", "title", "clean_test", "binary", "budget", and "domgross". Name your new data frame "bechdel_1". 
+</p>
+```{r message=FALSE, warning=FALSE, include=FALSE}
+bechdel_1 = 
+  bechdel %>%
+  select(year, title, clean_test, binary, budget, domgross)
+```
+
+```{r practice2,exercise=TRUE}
+#Type your code here! 
+```
+<p style="font-family: times, serif; font-size:12pt">
+  Additionally, two more useful functions for data wrangling are the summarize() function and group_by() function. The group_by() function allows us to perform operations within a specified variable. The summarize() function creates a new data frame that comprises summary statistics. Let's apply thees functions to our Bechdel data:
+  Say I want to calculate the mean budget for all films that passed the Bechdel test vs. films that failed the Bechdel Test for each year using the bechdel_1 data set. I would use to group_by() function and the summarize() function together: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_1 %>%
+  group_by(binary) %>%
+  summarize(mean_budget=mean(budget))
+```
+  Try typing out the code we would want to use if we wanted to calculate the mean domestic gross income for each category of film: (Hint: Try adding na.rm to your mean() function, this will remove any values of "NA" from the calculation)
+```{r message=FALSE, warning=FALSE, include=FALSE}
+bechdel_1 %>%
+  group_by(binary) %>%
+  summarize(mean_domgross=mean(domgross, na.rm=TRUE))
+```
+<p style="font-family: times, serif; font-size:12pt">
+  Another data wrangling function we could use for this data is count(). The count() function tallys the number of occurrences of a given variable. For example, here is how we would use the count function to see how many of the films in the bechdel_1 data were made each year: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_1 %>% count(year) 
+```
+<p style="font-family: times, serif; font-size:12pt">
+  That gave us a lot of rows! To make it a little easier to interpret, we can use the slice_max() function. The slice_max() function will retrieve the top five years that had the most films: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_1 %>% 
+  count(year) %>%
+  slice_max(order_by=n, n=5)
+```
+<p style="font-family: times, serif; font-size:12pt">
+  You can change the n= value to retrieve the top 3 years with the most films, the top 10 years with the most films, etc. Give it a try! 
+  
+```{r practice4,exercise=TRUE}
+#Type your code here! 
+```
+<p style="font-family: times, serif; font-size:12pt">
+  Let's see which years had the most films that passed the Bechdel test: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_1 %>% 
+  filter(binary=="PASS") %>%
+  count(year) %>%
+  slice_max(order_by=n, n=5)
+```
+<p style="font-family: times, serif; font-size:12pt">
+  If we wanted to see which years had the most films that failed the Bechdel test, or if we wanted to change the number of years displayed by slice_max(), we could retype all of our code, or we could turn it into a function. 
+</p>
+<p style="font-size: 20pt">
+Writing Your Own Functions
+</p>
+<p style="font-family: times, serif; font-size:12pt">
+  Writing your own functions can be useful when wrangling data because it can prevent you from having to repeat the same lengthy chunks of code. In the case of our Bechdel data, writing a new function isn't strictly necessary, but it's a good skill to develop and practice makes perfect! Let's turn our code from the previous chunk into a function. 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_count= #start by giving your function a name, and set it = to function()
+  function(test_result, n_years){ #now select what you want your inputs to be
+    bechdel_1%>% #give the function your source data
+    filter(binary==test_result) %>% #insert your input names into the code
+    count(year) %>%
+    slice_max(order_by=n, n=n_years)
+  }
+```
+<p style="font-family: times, serif; font-size:12pt">
+  This is what it would look like when we put in our desired inputs: 
+</p>
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+bechdel_count("FAIL", 10)
+```
+<p style="font-family: times, serif; font-size:12pt">
+  Try experimenting with different inputs!
+</p>
+```{r practice5,exercise=TRUE}
+#Type your code here! 
+```
+<p style="font-family: times, serif; font-size:12pt">
+  Now, try experimenting with writing some of your own functions using the data wrangling functions you have learned in the previous sections. 
+</p>
+```{r practice6,exercise=TRUE}
+#Type your code here! 
+```
+
+<p style="font-size: 20pt">
+The Fun Part: Visualizing Our Data!
+</p>
+
+<p style="font-family: times, serif; font-size:12pt">
+  Let's take some of our wrangled data and use it to make some graphics! This is where we can start to draw meaningful conclusions from our data set. 
+  When we selected the five years that produced the most films that passed the Bechdel test, we (unsurprisingly) found that these years all fell within the 21st century. Here we can see the progression of how many Bechdel-passing films have been realeased each year from 1970-2013. Fortunately, we can see that the number of Bechdel-passing films realeased each year has increased over time, and as of 2013 was on an upward trend!
+</p>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bechdel_1 %>%
+  filter(binary=="PASS") %>%
+  count(year) %>%
+  ggplot(aes(x=year, y=n))+geom_line()+labs(title="Number of Films Released Each Year that Passed The Bechdel Test", x="Year", y="# of Films")
+```  
+<p style="font-family: times, serif; font-size:12pt">
+  Additionally, earlier in the tutorial, we found that films that passed the Bechdel test had a lower mean budget than films that failed the Bechdel test. The following plot shows the mean budget each year for films that passed the Bechdel test vs. films that failed the Bechdel test. The mean budget for films that failed the Bechdel test is consistently higher thatn the mean budget for films that passed the Bechdel test. One assumption that could be drawn from this is that Hollywood has historically invested less money into stories that prioritize female stories and female representation, which could indicate a larger issue of sexism in the entertainment industry. 
+</p>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bechdel_1 %>%
+  group_by(year, binary) %>%
+  summarize(mean_budget=mean(budget)) %>%
+  ggplot(aes(x=year, y=mean_budget)) + geom_line(aes(color=binary)) + labs(title="Mean Budget of Films Released Each Year by Bechdel Test Result", x="Year", y="Mean Budget")
+```
+
+
+
+
+
+
+
+
+
